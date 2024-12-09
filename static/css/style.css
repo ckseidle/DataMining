@@ -154,4 +154,26 @@ button:hover {
     border: 1px solid #dc3545;
     border-radius: 4px;
     background-color: #fff;
+}
+
+.trend-container {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    height: 500px;
+}
+
+.trend-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .trend-form {
+        grid-template-columns: 1fr;
+    }
 } 

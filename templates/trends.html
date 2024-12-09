@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Player Stat Trends</h2>
+    <form action="{{ url_for('trends') }}" method="post" class="trend-form">
+        <div class="form-group">
+            <label for="player">Select Player:</label>
+            <select name="player" id="player" required>
+                <option value="">Select a player...</option>
+                {% for player in players %}
+                <option value="{{ player }}" {% if player == selected_player %}selected{% endif %}>
+                    {{ player }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="stat">Select Statistic:</label>
+            <select name="stat" id="stat" required>
+                <option value="">Select a statistic...</option>
+                {% for stat in stats %}
+                <option value="{{ stat }}" {% if stat == selected_stat %}selected{% endif %}>
+                    {{ stat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit">Show Trend</button>
+    </form>
+
+    {% if selected_player and selected_stat %}
+    <div class="trend-container">
+        <canvas id="trendChart"></canvas>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ labels | tojson | safe }},
+                datasets: [
+                    {
+                        label: '{{ selected_stat }}',
+                        data: {{ values | tojson | safe }},
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1,
+                        pointRadius: 5
+                    },
+                    {
+                        label: 'Trend',
+                        data: {{ trend | tojson | safe }},
+                        borderColor: 'rgba(255, 99, 132, 0.7)',
+                        borderDash: [5, 5],
+                        tension: 0.1,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: "{{ selected_player }}'s {{ selected_stat }} Over Time"
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '{{ selected_stat }}'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Season'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {% endif %}
+</div>
+{% endblock %} 

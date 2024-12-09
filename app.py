@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import StandardScaler
+import json
 
 app = Flask(__name__)
 
@@ -89,6 +90,48 @@ def predict_next_season(player_data):
         
     return predictions
 
+# Define stats available for trending
+TREND_STATS = {
+    'Fantasy Points (PPR)': 'fantasy_points_ppr',
+    'Games Played': 'games',
+    'Pass Attempts': 'pass_attempts',
+    'Passing Yards': 'passing_yards',
+    'Pass TDs': 'pass_td',
+    'Interceptions': 'interception',
+    'Targets': 'targets',
+    'Receptions': 'receptions',
+    'Receiving Yards': 'receiving_yards',
+    'Receiving TDs': 'reception_td',
+    'Rush Attempts': 'rush_attempts',
+    'Rushing Yards': 'rushing_yards',
+    'Rushing TDs': 'run_td',
+    'Yards Per Game': 'ypg',
+    'Points Per Game': 'ppg'
+}
+
+def prepare_trend_data(player_data, stat_column):
+    # Sort by season and convert to numeric type
+    player_data = player_data.sort_values('season')
+    
+    # Convert values to lists
+    labels = [int(x) for x in player_data['season'].tolist()]
+    values = [float(x) for x in player_data[stat_column].tolist()]
+    trend = []
+    
+    # Calculate trend line if more than one data point
+    if len(labels) > 1:
+        X = np.array(labels).reshape(-1, 1)
+        y = np.array(values)
+        model = LinearRegression()
+        model.fit(X, y)
+        trend = [float(x) for x in model.predict(X)]
+    
+    return {
+        'labels': labels,
+        'values': values,
+        'trend': trend
+    }
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     comparison_data = None
@@ -162,6 +205,42 @@ def predict():
                          players=player_list,
                          prediction_data=prediction_data,
                          error_message=error_message)
+
+@app.route('/trends', methods=['GET', 'POST'])
+def trends():
+    labels = []
+    values = []
+    trend = []
+    selected_player = None
+    selected_stat = None
+    
+    if request.method == 'POST':
+        player_name = request.form.get('player')
+        stat_name = request.form.get('stat')
+        
+        if player_name and stat_name:
+            player_data = df[df['player_name'] == player_name]
+            stat_column = TREND_STATS[stat_name]
+            
+            if not player_data.empty:
+                try:
+                    data = prepare_trend_data(player_data, stat_column)
+                    labels = data['labels']
+                    values = data['values']
+                    trend = data['trend']
+                    selected_player = player_name
+                    selected_stat = stat_name
+                except Exception as e:
+                    print(f"Error preparing trend data: {e}")
+    
+    return render_template('trends.html',
+                         players=player_list,
+                         stats=list(TREND_STATS.keys()),
+                         labels=labels,
+                         values=values,
+                         trend=trend,
+                         selected_player=selected_player,
+                         selected_stat=selected_stat)
 
 if __name__ == '__main__':
     app.run(debug=True)
