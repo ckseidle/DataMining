@@ -15,3 +15,6 @@ https://github.com/user-attachments/assets/c445080b-4acc-4812-b458-af4098c38d4d
 ### Slide Deck
 [Group4_FantasyFootball_Part6.pdf](https://github.com/user-attachments/files/18068684/Group4_FantasyFootball_Part6.pdf)
 
+### Final Report
+[Final Report.pdf](https://github.com/user-attachments/files/18068888/Final.Report.pdf)
+
