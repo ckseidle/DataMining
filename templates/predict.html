@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Player Stats Predictor</h2>
+    <form action="{{ url_for('predict') }}" method="post">
+        <div class="form-group">
+            <label for="player">Select Player:</label>
+            <select name="player" id="player" required>
+                <option value="">Select a player...</option>
+                {% for player in players %}
+                <option value="{{ player }}">{{ player }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit">Predict Next Season</button>
+    </form>
+
+    {% if error_message %}
+    <div class="error-message">
+        {{ error_message }}
+    </div>
+    {% endif %}
+
+    {% if prediction_data %}
+    <div class="prediction-container">
+        <h3>{{ prediction_data.player_name }} - {{ prediction_data.next_season }} Season Predictions</h3>
+        
+        <table class="prediction-table">
+            <thead>
+                <tr>
+                    <th>Statistic</th>
+                    <th>Last Season</th>
+                    <th>Predicted</th>
+                    <th>Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat_name, predicted_value in prediction_data.predictions.items() %}
+                {% set last_value = prediction_data.last_season[stat_name] %}
+                {% set change = predicted_value - last_value %}
+                <tr>
+                    <td>{{ stat_name }}</td>
+                    <td>{{ last_value }}</td>
+                    <td>{{ predicted_value }}</td>
+                    <td class="{% if change > 0 %}positive{% elif change < 0 %}negative{% endif %}">
+                        {{ '%+.2f'|format(change) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

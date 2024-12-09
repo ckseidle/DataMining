@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request
 import pandas as pd
 import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import StandardScaler
 
 app = Flask(__name__)
 
@@ -44,6 +46,49 @@ def get_player_career_averages(player_data):
     averages = player_data[stats_to_average].astype(float).mean()
     return averages
 
+# Define which stats to predict
+PREDICTION_STATS = {
+    'Fantasy Points (PPR)': 'fantasy_points_ppr',
+    'Games': 'games',
+    'Passing Yards': 'passing_yards',
+    'Pass TDs': 'pass_td',
+    'Receiving Yards': 'receiving_yards',
+    'Receiving TDs': 'reception_td',
+    'Rushing Yards': 'rushing_yards',
+    'Rushing TDs': 'run_td',
+    'Points Per Game': 'ppg'
+}
+
+def predict_next_season(player_data):
+    predictions = {}
+    
+    if len(player_data) < 2:  # Need at least 2 seasons for prediction
+        return None
+        
+    # Sort by season
+    player_data = player_data.sort_values('season')
+    
+    for stat_name, stat_column in PREDICTION_STATS.items():
+        # Prepare data for prediction
+        X = player_data['season'].values.reshape(-1, 1)
+        y = player_data[stat_column].values
+        
+        # Create and fit the model
+        model = LinearRegression()
+        model.fit(X, y)
+        
+        # Predict next season
+        next_season = player_data['season'].max() + 1
+        prediction = model.predict([[next_season]])[0]
+        
+        # Ensure predictions are not negative
+        prediction = max(0, prediction)
+        
+        # Round the prediction appropriately
+        predictions[stat_name] = round(prediction, 2)
+        
+    return predictions
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     comparison_data = None
@@ -81,6 +126,42 @@ def index():
     return render_template('index.html', 
                          players=player_list,
                          comparison_data=comparison_data)
+
+@app.route('/predict', methods=['GET', 'POST'])
+def predict():
+    prediction_data = None
+    error_message = None
+    
+    if request.method == 'POST':
+        player_name = request.form.get('player')
+        
+        if player_name:
+            # Get player's historical data
+            player_data = df[df['player_name'] == player_name]
+            
+            if len(player_data) < 2:
+                error_message = "Need at least 2 seasons of data for prediction"
+            else:
+                # Get predictions
+                predictions = predict_next_season(player_data)
+                
+                if predictions:
+                    prediction_data = {
+                        'player_name': player_name,
+                        'next_season': int(player_data['season'].max() + 1),
+                        'predictions': predictions,
+                        'last_season': {
+                            stat_name: round(player_data[stat_column].iloc[-1], 2)
+                            for stat_name, stat_column in PREDICTION_STATS.items()
+                        }
+                    }
+                else:
+                    error_message = "Unable to generate predictions"
+    
+    return render_template('predict.html', 
+                         players=player_list,
+                         prediction_data=prediction_data,
+                         error_message=error_message)
 
 if __name__ == '__main__':
     app.run(debug=True)
