@@ -3,10 +3,11 @@
 {% block content %}
 <div class="container">
     <h2>Player Comparison Tool</h2>
-    <form action="#" method="post">
+    <form action="{{ url_for('index') }}" method="post">
         <div class="form-group">
             <label for="player1">Select Player 1:</label>
-            <select name="player1" id="player1">
+            <select name="player1" id="player1" required>
+                <option value="">Select a player...</option>
                 {% for player in players %}
                 <option value="{{ player }}">{{ player }}</option>
                 {% endfor %}
@@ -15,7 +16,8 @@
         
         <div class="form-group">
             <label for="player2">Select Player 2:</label>
-            <select name="player2" id="player2">
+            <select name="player2" id="player2" required>
+                <option value="">Select a player...</option>
                 {% for player in players %}
                 <option value="{{ player }}">{{ player }}</option>
                 {% endfor %}
@@ -24,5 +26,28 @@
         
         <button type="submit">Compare Players</button>
     </form>
+
+    {% if comparison_data %}
+    <div class="comparison-container">
+        <h3>Career Average Comparison</h3>
+        <div class="comparison-header">
+            <div class="player-name">{{ comparison_data.player1_name }}</div>
+            <div class="stat-name">Statistic</div>
+            <div class="player-name">{{ comparison_data.player2_name }}</div>
+        </div>
+        <div class="seasons-info">
+            <div>{{ comparison_data.player1_seasons }} seasons ({{ comparison_data.player1_years }})</div>
+            <div>Career Span</div>
+            <div>{{ comparison_data.player2_seasons }} seasons ({{ comparison_data.player2_years }})</div>
+        </div>
+        {% for stat_name, values in comparison_data.stats.items() %}
+        <div class="comparison-row {% if values.player1 > values.player2 %}player1-better{% elif values.player2 > values.player1 %}player2-better{% endif %}">
+            <div class="stat-value">{{ values.player1 }}</div>
+            <div class="stat-name">{{ stat_name }}</div>
+            <div class="stat-value">{{ values.player2 }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
