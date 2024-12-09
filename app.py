@@ -18,7 +18,6 @@ def load_player_data():
         print(f"Error loading data: {e}")
         return None, []
 
-# Define key statistics for comparison
 COMPARISON_STATS = {
     'Games Per Season': 'games',
     'Fantasy Points (PPR)': 'fantasy_points_ppr',
@@ -47,7 +46,6 @@ def get_player_career_averages(player_data):
     averages = player_data[stats_to_average].astype(float).mean()
     return averages
 
-# Define which stats to predict
 PREDICTION_STATS = {
     'Fantasy Points (PPR)': 'fantasy_points_ppr',
     'Games': 'games',
@@ -63,10 +61,9 @@ PREDICTION_STATS = {
 def predict_next_season(player_data):
     predictions = {}
     
-    if len(player_data) < 2:  # Need at least 2 seasons for prediction
+    if len(player_data) < 2:  
         return None
         
-    # Sort by season
     player_data = player_data.sort_values('season')
     
     for stat_name, stat_column in PREDICTION_STATS.items():
@@ -110,7 +107,6 @@ TREND_STATS = {
 }
 
 def prepare_trend_data(player_data, stat_column):
-    # Sort by season and convert to numeric type
     player_data = player_data.sort_values('season')
     
     # Convert values to lists
@@ -118,7 +114,7 @@ def prepare_trend_data(player_data, stat_column):
     values = [float(x) for x in player_data[stat_column].tolist()]
     trend = []
     
-    # Calculate trend line if more than one data point
+    # Calculate trend line
     if len(labels) > 1:
         X = np.array(labels).reshape(-1, 1)
         y = np.array(values)
@@ -131,6 +127,20 @@ def prepare_trend_data(player_data, stat_column):
         'values': values,
         'trend': trend
     }
+
+RANKABLE_STATS = {
+    'Fantasy Points (PPR)': 'fantasy_points_ppr',
+    'Passing Yards': 'passing_yards',
+    'Pass TDs': 'pass_td',
+    'Receiving Yards': 'receiving_yards',
+    'Receiving TDs': 'reception_td',
+    'Receptions': 'receptions',
+    'Rushing Yards': 'rushing_yards',
+    'Rushing TDs': 'run_td',
+    'Total TDs': 'total_tds',
+    'Total Yards': 'total_yards',
+    'Points Per Game': 'ppg'
+}
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -241,6 +251,41 @@ def trends():
                          trend=trend,
                          selected_player=selected_player,
                          selected_stat=selected_stat)
+
+@app.route('/rankings', methods=['GET', 'POST'])
+def rankings():
+    rankings_data = None
+    selected_stat = None
+    selected_season = None
+    
+    seasons = sorted(df['season'].unique(), reverse=True)
+    
+    if request.method == 'POST':
+        stat_name = request.form.get('stat')
+        season = request.form.get('season')
+        
+        if stat_name and season:
+            stat_column = RANKABLE_STATS[stat_name]
+            season = int(season)
+            
+            season_data = df[df['season'] == season]
+            
+            # Get top 10 players for selected stat
+            top_players = season_data.nlargest(10, stat_column)[
+                ['player_name', 'team', stat_column, 'position']
+            ].to_dict('records')
+            
+            rankings_data = top_players
+            selected_stat = stat_name
+            selected_season = season
+    
+    return render_template('rankings.html',
+                         stats=list(RANKABLE_STATS.keys()),
+                         seasons=seasons,
+                         rankings_data=rankings_data,
+                         selected_stat=selected_stat,
+                         selected_season=selected_season,
+                         RANKABLE_STATS=RANKABLE_STATS)
 
 if __name__ == '__main__':
     app.run(debug=True)

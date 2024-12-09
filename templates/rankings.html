@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Top Players Rankings</h2>
+    <form action="{{ url_for('rankings') }}" method="post" class="rankings-form">
+        <div class="form-group">
+            <label for="stat">Select Statistic:</label>
+            <select name="stat" id="stat" required>
+                <option value="">Select a statistic...</option>
+                {% for stat in stats %}
+                <option value="{{ stat }}" {% if stat == selected_stat %}selected{% endif %}>
+                    {{ stat }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="season">Select Season:</label>
+            <select name="season" id="season" required>
+                <option value="">Select a season...</option>
+                {% for season in seasons %}
+                <option value="{{ season }}" {% if season == selected_season %}selected{% endif %}>
+                    {{ season }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit">Show Rankings</button>
+    </form>
+
+    {% if rankings_data %}
+    <div class="rankings-container">
+        <h3>Top 10 Players - {{ selected_stat }} ({{ selected_season }})</h3>
+        <table class="rankings-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Team</th>
+                    <th>Position</th>
+                    <th>{{ selected_stat }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in rankings_data %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ player.player_name }}</td>
+                    <td>{{ player.team }}</td>
+                    <td>{{ player.position }}</td>
+                    <td>{{ player[RANKABLE_STATS[selected_stat]] | round(2) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
